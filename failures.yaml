@@ -1,0 +1,13 @@
+# Failure classes declared by proof-fabric.
+# Addresses: classes this repo's design actively mitigates.
+# Vulnerable_to: classes it is exposed to but does not mitigate.
+# Vocabulary: ~/tmig/src/tmig_bridge/failures.py (311 classes, 25 domains)
+addresses:
+  - dat.corruption
+  - sup.artifact_swap
+  - byz.tampering
+  - cry.hash_collision
+vulnerable_to:
+  - sup.compromised_key
+  - sw.undefined_state
+  - cry.cert_expiry
