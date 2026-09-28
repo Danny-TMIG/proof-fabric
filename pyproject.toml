@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "proof-fabric"
-version = "0.1.0"
+version = "0.1.8"
 description = "Portable proof-carrying artifact fabric — re-verify on every read"
 requires-python = ">=3.12"
 dependencies = ["cryptography>=42"]
