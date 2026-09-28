@@ -68,3 +68,10 @@ Eight independent programs that happen to be about the same system, tied
 together by one verifier that has no runtime relationship to any of them.
 tmig witnesses that each Python program is green and unchanged, and
 produces one signed object that says so.
+
+## The three-axis map
+
+The same eight programs can be read on three mathematical
+axes — Cayley-Dickson (vertical doubling), Watson-Crick
+(horizontal pairing), Hofstadter (the strange loop at the
+top). See [`docs/MAPPING.md`](MAPPING.md).
