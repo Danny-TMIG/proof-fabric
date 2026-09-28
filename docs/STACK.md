@@ -2,20 +2,29 @@
 
 proof-fabric is the read-boundary verification layer. It attaches an Ed25519-signed certificate to a file and re-verifies the certificate against the file's SHA-256 hash on every read, so that a file whose contents have changed since the certificate was issued fails the read rather than being returned. It shares the Merkle and Ed25519 primitives with state-substrate, mlx-omni, and tmig. The rest of this document describes the stack that proof-fabric closes at the read boundary.
 
-## The eight claims
+## The eight claims, in working order
 
-Each program in the stack produces one kind of verifiable claim:
+The claims are listed in the order each one first becomes load-bearing
+during a single end-to-end pass. The order is not conceptual -- it is
+operational. It is the sequence in which each program does its work.
 
-| program | claim |
-|---|---|
-| tstate | which states a system can reach |
-| state-substrate | a cryptographic attestation of a set of files |
-| mlx-omni | primitives for peers that exchange state without a coordinator |
-| aesn | a signed record of which commands ran |
-| twin-fabric | a verdict on whether a model matches observed behavior |
-| unified-security-ops | a signed record of security dispatches |
-| proof-fabric | verification at the read boundary |
-| tmig | one signed manifest over the whole set |
+| # | program | claim | when it runs |
+|---|---|---|---|
+| 1 | tstate | which states a system can reach | first: to bound what is possible before anything is pinned |
+| 2 | state-substrate | a cryptographic attestation of a set of files | second: to pin the current state before any action |
+| 3 | mlx-omni | primitives for peers that exchange state without a coordinator | third: to establish causal order across peers |
+| 4 | aesn | a signed record of which commands ran | fourth: to execute a declared plan against the pinned state |
+| 5 | unified-security-ops | a signed record of security dispatches | fifth: to dispatch security tooling against that state |
+| 6 | twin-fabric | a verdict on whether a model matches observed behavior | sixth: to compare the model to what actually happened |
+| 7 | proof-fabric | verification at the read boundary | seventh: to verify every artifact at the point of consumption |
+| 8 | tmig | one signed manifest over the whole set | eighth: to fold all of the above into one signed object |
+
+Each claim is a precondition for the next. tstate bounds what can
+happen. state-substrate pins what is. mlx-omni orders who saw what.
+aesn records what ran. unified-security-ops records what was touched.
+twin-fabric says whether it matched. proof-fabric verifies at the
+boundary. tmig names the whole set in one object.
+
 
 ## Input and output
 
@@ -340,44 +349,70 @@ Steps 1 and 2 are intermediates. They are signed artifacts in their own
 right, and they are the inputs to the manifest's claim. But the manifest
 is the only object that names the whole set. It is the output.
 
-## Why the stack is divided this way
+#### Why the manifest is meaningful
 
-Each program is one noun. tstate is reachability. proof-fabric is
-re-verify-on-read. The split follows a design rule: if a program cannot be
-described in one sentence without "and", it should be two programs.
+The manifest replaces a set of separate trust claims with one. Without
+it, a party who wants to know the state of the system must trust the
+operator for each repository separately, and must trust that each test
+suite ran against the code that was actually on disk at the time. With
+the manifest and the public key, that party recomputes. They do not
+trust the operator. They trust Ed25519 and SHA-256.
 
-Four structural properties depend on the split:
+Six properties make the manifest meaningful:
 
-- Blast radius. A broken configuration in one program cannot break
-  another's build.
-- Attribution granularity. The manifest carries one cryptographic root per
-  program. A change anywhere is localized to that program's root.
-- Test isolation. Each program runs its tests in its own environment.
-- Selective adoption. A user who wants reachability analysis can install
-  tstate and nothing else.
+1. **Externally verifiable.** A verifier needs the manifest and the
+   public key. No network, no access to the operator's machines, no
+   cooperation from the operator.
 
-## What is outside the stack
+2. **Content-addressed.** Every byte of every tracked file is committed
+   to by a Merkle root. A single changed byte changes that repository's
+   root.
 
-Three things live in the same working environment without being in tmig's
-discovery set:
+3. **Signed.** The `bridge_root` and the per-repo roots are signed with
+   Ed25519. Any change after signing invalidates the signature.
 
-- **sovereign-core** is a docker-compose stack, not a Python package. It
-  has its own health check.
-- **operator/** is a directory tree of positions, decisions, and
-  disconfirmations. It has no tests to run and nothing to hash.
-- **gen / toybox** is a scaffold generator. It produces code that may end
-  up in repositories, but is not itself a verified artifact.
+4. **Complete.** Every repository in the discovery set appears. The set
+   is not a subset chosen for convenience.
 
-## What the arrangement is
+5. **Granular.** A change anywhere is localized to one repository's
+   `merkle_root`. The diff names which repo changed, and inside that
+   repo, which files.
 
-Eight independent programs that happen to be about the same system, tied
-together by one verifier that has no runtime relationship to any of them.
-tmig witnesses that each Python program is green and unchanged, and
-produces one signed object that says so.
+6. **Aggregate.** One `bridge_root` names all eight. A verifier can
+   check one value and be confident about the whole set.
 
-## The three-axis map
+#### How The Mark Intelligence Group uses the manifest
 
-The same eight programs can be read on three mathematical
-axes — Cayley-Dickson (vertical doubling), Watson-Crick
-(horizontal pairing), Hofstadter (the strange loop at the
-top). See [`docs/MAPPING.md`](MAPPING.md).
+Six concrete uses:
+
+1. **Release attestation.** Before publishing any wheel to PyPI, the
+   manifest for that day names the exact byte content of every tracked
+   file in every repository. The published wheel and the manifest
+   together say what was released. An outside party who downloads the
+   wheel can check it against the manifest.
+
+2. **Audit by outside parties.** An auditor holding the public key and
+   a local clone of the eight repositories runs `tmig
+   verify-manifest`. Every per-repo root recomputes or the audit
+   fails. No access to the operator's machines is required.
+
+3. **Change detection.** A manifest signed on one day and a manifest
+   signed on the next day either share the same `bridge_root` (nothing
+   changed) or differ in a specific, nameable way (the diff names which
+   repository changed and which files within it).
+
+4. **Compliance evidence.** Regulatory frameworks ask for evidence that
+   a specific version of the code was tested and shipped. The manifest
+   is that evidence, cryptographically bound to the bytes.
+
+5. **Incident response.** When something breaks, the manifest names the
+   exact state of the code at the moment the manifest was signed. A
+   rollback target is the commit the manifest names. The manifest
+   records what was, not what should have been.
+
+6. **Witness chain.** Each signed manifest is copied to
+   `~/tmig-witness/` and committed to a separate git tree. If that tree
+   is pushed to a remote controlled by a different party, the record
+   becomes an externally auditable chain over time. The witness does
+   not need to trust the operator's machine; it needs only the
+   manifest, the public key, and its own git history.
