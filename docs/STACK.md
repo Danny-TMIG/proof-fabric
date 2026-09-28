@@ -1,10 +1,6 @@
 # How this repository relates to The Mark Intelligence Group's stack
 
-The Mark Intelligence Group's stack is a set of eight independent programs
-that together make the state and behavior of a computer system verifiable
-by outside parties. No program in the stack imports another. No program
-communicates with another at runtime. Each program is separately
-installable and separately verifiable.
+proof-fabric is the read-boundary verification layer. It attaches an Ed25519-signed certificate to a file and re-verifies the certificate against the file's SHA-256 hash on every read, so that a file whose contents have changed since the certificate was issued fails the read rather than being returned. It shares the Merkle and Ed25519 primitives with state-substrate, mlx-omni, and tmig. The rest of this document describes the stack that proof-fabric closes at the read boundary.
 
 ## The eight claims
 
