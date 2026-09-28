@@ -1,51 +1,74 @@
-# How this repository relates to the stack
+# How this repository relates to The Mark Intelligence Group's stack
 
-**proof-fabric** is the read-boundary verification layer. Verifies that what you are reading right now is what was attested.
+The Mark Intelligence Group's stack is a set of eight independent programs
+that together make the state and behavior of a computer system verifiable
+by outside parties. No program in the stack imports another. No program
+communicates with another at runtime. Each program is separately
+installable and separately verifiable.
 
-## The conceptual stack
+## The eight claims
 
-Read top-to-bottom as *each layer is about the one below*, not a call path.
+Each program in the stack produces one kind of verifiable claim:
 
-    tstate                 pure math: what states are reachable
-    state-substrate        cryptography over those states
-    mlx-omni               many peers each holding such states
-    aesn                   actions taken against such states
-    twin-fabric            model vs observed transitions
-    unified-security-ops   operational tools on the real system
-    proof-fabric           verification at the read boundary
-    sovereign-core         the actual system
-    tmig                   the verifier that witnesses the set
+| program | claim |
+|---|---|
+| tstate | which states a system can reach |
+| state-substrate | a cryptographic attestation of a set of files |
+| mlx-omni | primitives for peers that exchange state without a coordinator |
+| aesn | a signed record of which commands ran |
+| twin-fabric | a verdict on whether a model matches observed behavior |
+| unified-security-ops | a signed record of security dispatches |
+| proof-fabric | verification at the read boundary |
+| tmig | one signed manifest over the whole set |
 
-## Runtime dependency: none
+## The conceptual order
 
-No repo imports another. Each has its own pyproject.toml, own venv, own
-version. Even tmig invokes siblings as subprocesses, never as imports.
+Read top-to-bottom as "each claim is about the one below", not as a call
+path:
 
-## Runtime communication: none
+    tstate                  what states are reachable
+    state-substrate         cryptographic attestation of a state
+    mlx-omni                many peers each holding such states
+    aesn                    actions taken against such states
+    twin-fabric             model vs. observed transitions
+    unified-security-ops    operational tools acting on the real system
+    proof-fabric            verification at the read boundary
+    tmig                    the verifier that witnesses the set
 
-No RPC, no message bus, no shared DB, no HTTP between repos.
+There is no function call from twin-fabric down to tstate, and no message
+from proof-fabric to state-substrate. The relationship is conceptual.
 
-## The one shared thing
+## Why the stack is divided this way
 
-tmig catalogues (failures, forms, protocols, terms) and the signed manifest.
-Shared documentarily, not by import.
+Each program is one noun. tstate is reachability. proof-fabric is
+re-verify-on-read. The split follows a design rule: if a program cannot be
+described in one sentence without "and", it should be two programs.
 
-## Why the split
+Four structural properties depend on the split:
 
-Each repo is one noun. Different audiences, different math, different
-dependencies, different test sizes. The split localizes changes and keeps the
-manifest granular — one Merkle root per repo.
+- Blast radius. A broken configuration in one program cannot break
+  another's build.
+- Attribution granularity. The manifest carries one cryptographic root per
+  program. A change anywhere is localized to that program's root.
+- Test isolation. Each program runs its tests in its own environment.
+- Selective adoption. A user who wants reachability analysis can install
+  tstate and nothing else.
 
-## Why not a monorepo
+## What is outside the stack
 
-Blast radius, attribution granularity, test isolation, selective adoption.
+Three things live in the same working environment without being in tmig's
+discovery set:
 
-## Non-members
+- **sovereign-core** is a docker-compose stack, not a Python package. It
+  has its own health check.
+- **operator/** is a directory tree of positions, decisions, and
+  disconfirmations. It has no tests to run and nothing to hash.
+- **gen / toybox** is a scaffold generator. It produces code that may end
+  up in repositories, but is not itself a verified artifact.
 
-sovereign-core (docker-compose), operator/ (not code), gen/toybox (producer
-side) — excluded by the discovery predicate without special cases.
+## What the arrangement is
 
-## What this arrangement is
-
-Eleven independent things about the same system, tied by one witness. The
-relationship is witnessing, not dependency.
+Eight independent programs that happen to be about the same system, tied
+together by one verifier that has no runtime relationship to any of them.
+tmig witnesses that each Python program is green and unchanged, and
+produces one signed object that says so.
