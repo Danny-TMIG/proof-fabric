@@ -4,22 +4,40 @@ proof-fabric is a Python library that attaches an Ed25519-signed certificate to
 a file and re-verifies the certificate against the file's SHA-256 hash on every
 read. If the file's contents have changed since the certificate was issued, the
 read fails with an error rather than returning the file. proof-fabric is the
-read-boundary verification layer of the tmig stack.
+read-boundary verification layer of The Mark Intelligence Group's stack.
 
-proof-fabric is a standalone library. The only runtime dependency is the `cryptography` library. No other program in the tmig stack is required to use proof-fabric.
+proof-fabric is a descriptive name; it is not an abbreviation.
+
+proof-fabric is a standalone library. The only runtime dependency is the `cryptography` library. No other program in The Mark Intelligence Group's stack is required to use proof-fabric.
 
 ## What problem proof-fabric solves
 
-An artifact and a signed manifest that describes the artifact are two pieces of
-state that can drift apart. A build produces a binary and a manifest listing
-the binary's hash. A later rebuild patches the binary and does not update the
-manifest. A downstream user downloads the manifest, believes it describes the
-binary, and installs a binary that does not match the manifest.
+The Mark Intelligence Group's stack produces eight independent kinds of
+verifiable claim about a computer system. proof-fabric contributes the
+seventh: verification that the bytes being read are the bytes that were
+attested, on every read.
 
-The gap between checking a hash once and checking it on every read is where
-this class of error occurs. Systems that check once at load time and then trust
-the artifact indefinitely do not detect a change that occurs after the initial
-check. proof-fabric closes this gap by checking on every read.
+An artifact and a signed manifest that describes the artifact are two
+pieces of state that can drift apart. A build produces a binary and a
+manifest listing the binary's hash. A later rebuild patches the binary
+and does not update the manifest. A downstream user downloads the
+manifest, believes it describes the binary, and installs a binary that
+does not match the manifest. The gap between checking a hash once and
+checking it on every read is where this class of error occurs.
+
+proof-fabric's purpose within the stack is to close that gap. The library
+attaches an Ed25519-signed certificate to a file, and re-verifies the
+certificate against the file's SHA-256 hash on every read. If the file's
+contents have changed since the certificate was issued, the read fails
+rather than returning the file. The library deliberately does not cache
+the verification result, because caching would reopen the gap that the
+library exists to close.
+
+proof-fabric's importance within the stack is that the stack's other
+claims are claims made at a moment. A party that reads the artifact a
+week later needs a way to confirm the artifact still matches the
+attestation. proof-fabric is the layer at which that confirmation
+happens.
 
 ## What proof-fabric provides
 
@@ -116,9 +134,9 @@ key.
   library with a threshold scheme. The threshold scheme is not provided.
 - **Ed25519 only.** The signature scheme is fixed at Ed25519.
 
-## Relationship to the tmig stack
+## Relationship to The Mark Intelligence Group's stack
 
-proof-fabric is one of eight independent programs in the tmig stack. Formal
+proof-fabric is one of eight independent programs in The Mark Intelligence Group's stack. Formal
 specification: [docs/SPEC.md](docs/SPEC.md). Relationship model:
 [docs/STACK.md](docs/STACK.md).
 
