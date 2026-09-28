@@ -5,7 +5,7 @@
 addresses:
   - dat.corruption
   - sup.artifact_swap
-  - byz.tampering
+  - sec.tampering
   - cry.hash_collision
 vulnerable_to:
   - sup.compromised_key
