@@ -29,6 +29,7 @@ jobs:
         with: { name: dist, path: dist/ }
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          attestations: true
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
 
