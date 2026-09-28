@@ -6,6 +6,8 @@ read. If the file's contents have changed since the certificate was issued, the
 read fails with an error rather than returning the file. proof-fabric is the
 read-boundary verification layer of the tmig stack.
 
+proof-fabric is a standalone library. The only runtime dependency is the `cryptography` library. No other program in the tmig stack is required to use proof-fabric.
+
 ## What problem proof-fabric solves
 
 An artifact and a signed manifest that describes the artifact are two pieces of
